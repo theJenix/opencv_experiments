@@ -3,7 +3,7 @@
 #include "math.h"
 
 using namespace cv;
-const int MAX_CORNERS = 100;
+const int MAX_CORNERS = 10;
 
 int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC);
 void cvShowImageMat(const char *name, Mat& mat);
@@ -43,7 +43,7 @@ void getBinary(Mat& src, Scalar& low_HSV, Scalar& hi_HSV, Mat& dest) {
 int main ( int argc, char **argv )
 {
 	// Load two images and allocate other structures
-	VideoCapture cap("/Users/theJenix/Development/opencv_lk/recording2.mov"); // open the default camera
+	VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/recording2.mov"); // open the default camera
 	if(!cap.isOpened())  // check if we succeeded
         return -1;
 	
@@ -67,7 +67,7 @@ int main ( int argc, char **argv )
 		imgA = imgB;
         imgGrayA = imgGrayB;
 		imgC = imgB;
-		usleep(30 * 1000);
+		usleep(1000 * 1000);
 	}
 }
 
@@ -76,6 +76,39 @@ void cvShowImageMat(const char *name, Mat& mat) {
 	cvShowImage(name, &img);
 }
 
+int roundAndMap(double data, int precision, int minVal, int maxVal) {
+    int factor     = pow(10.0, precision);
+    double rounded = (int)(data * factor) / factor;
+    return fmin(fmax(minVal, rounded), maxVal) - minVal;
+}
+
+int binBySimpleAssignment(double samples[], int nSamples, int bins[], int nBins, int precision) {
+    
+    for (int i = 0; i != nSamples; ++i) {
+        bins[roundAndMap(samples[i], precision, -3, 3)]++;
+    }
+    return 0;
+}
+/*
+int binByKmeans(double samples[], int nSamples, int bins[], int nBins) {
+Mat samples(src.rows * src.cols, 3, CV_32F);
+  for( int y = 0; y < src.rows; y++ )
+    for( int x = 0; x < src.cols; x++ )
+      for( int z = 0; z < 3; z++) {
+        samples.at<float>(y + x*src.rows, z) = src.at<Vec3b>(y,x)[z];
+    }
+  int clusterCount = 3;
+  Mat labels;
+  int attempts = 5;
+  Mat centers;
+  kmeans(samples, clusterCount, labels, TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10000, 0.0001), attempts, KMEANS_PP_CENTERS, centers );
+}
+*/
+
+// I think this uses the population mean and stddev formulae
+int filterByMeanAndStdDev(double samples[], int nSamples) {
+    meanStdDev
+}
 int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
 	CvSize img_sz = imgA.size();
 	int win_size = 15;
@@ -89,7 +122,7 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
 
 	IplImage iplA = imgA;
 	IplImage iplB = imgB;
-    IplImage maskIplA = maskA;
+        IplImage maskIplA = maskA;
 	cvGoodFeaturesToTrack( &iplA, eig_image, tmp_image, cornersA, &corner_count,
 		0.05, 5.0, &maskIplA, 3, 0, 0.04 );
 
@@ -118,6 +151,8 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
 
 	// Make an image of the results
  	IplImage iplC = imgC;
+    double angles[MAX_CORNERS] = {0};
+    int angle_count = 0;
 	for( int i=0; i < MAX_CORNERS; i++ ) {
         if (!features_found[i]) {
             // printf("Feature not found\n");
@@ -135,11 +170,21 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
             // printf("Vector length: %f\n", dist);
             // printf("%d,%d to %d,%d\n", p0.x, p0.y, p1.x, p1.y);
         } else {
-            double angle = atan2(cornersB[i].y - cornersA[i].y, cornersB[i].x - cornersA[i].x);
-            printf("%f\n", angle);
+            double angle = atan2(p1.y - p0.y, p1.x - p0.x);
+            angles[i] = angle;
+            angle_count++;
             cvLine( &iplC, p0, p1, CV_RGB(255,0,0), 2 );
         }
 	}
+    for (int i = 0; i < angle_count; i++) {
+        printf("%d: %f\n", i, angles[i]);
+    }
+    
+    int counts[7] = {0};
+    binBySimpleAssignment(angles, angle_count, counts, 7, 0);
+    for (int i = 0; i < 7; i++) {
+        printf("%d: %d\n", i - 3, counts[i]);
+    }
 
 	cvReleaseImage(&eig_image);
 	cvReleaseImage(&tmp_image);
