@@ -204,6 +204,7 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
     double filteredSamples[MAX_CORNERS];
     int numFilteredSamples;
     filterByMeanAndStdDev(angles, angle_count, filteredSamples, numFilteredSamples);
+    double avgError = cvAvg(filteredSamples);
 
 	cvReleaseImage(&eig_image);
 	cvReleaseImage(&tmp_image);
