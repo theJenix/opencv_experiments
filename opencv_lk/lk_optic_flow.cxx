@@ -3,7 +3,7 @@
 #include "math.h"
 
 using namespace cv;
-const int MAX_CORNERS = 10;
+const int MAX_CORNERS = 100;
 
 int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC);
 void cvShowImageMat(const char *name, Mat& mat);
@@ -67,7 +67,7 @@ int main ( int argc, char **argv )
 		imgA = imgB;
         imgGrayA = imgGrayB;
 		imgC = imgB;
-		usleep(1000 * 1000);
+		usleep(30 * 1000);
 	}
 }
 
@@ -111,13 +111,19 @@ Mat samples(src.rows * src.cols, 3, CV_32F);
 // C++ MAGIC (nSamples)
 // Filters samples to accept 
 void filterByMeanAndStdDev(double samples[], int nSamples, double filteredSamples[], int& numFilteredSamples, int numStdDevAllowed = 1) {
-	double *mean;
-	double *std_dev;
-    cvAvgSdv(samples, mean, std_dev);
 
     numFilteredSamples = 0;
+    if (nSamples == 0) {
+        // no samples, bail out
+        return;
+    }
+
+	CvScalar mean;
+	CvScalar std_dev;
+    CvMat sm = cvMat(nSamples, 1, CV_64FC1, samples);
+    cvAvgSdv(&sm, &mean, &std_dev);
     for (int i = 0; i < nSamples; i++) {
-    	if (abs(samples[i] - mean) < std_dev * numStdDevAllowed) {
+    	if (abs(samples[i] - mean.val[0]) < std_dev.val[0] * numStdDevAllowed) {
     		filteredSamples[numFilteredSamples] = samples[i];
     		numFilteredSamples++;
     	}
@@ -204,8 +210,13 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
     double filteredSamples[MAX_CORNERS];
     int numFilteredSamples;
     filterByMeanAndStdDev(angles, angle_count, filteredSamples, numFilteredSamples);
-    double avgError = cvAvg(filteredSamples);
-
+    if (numFilteredSamples > 0) {
+        CvMat fs = cvMat(numFilteredSamples, 1, CV_64FC1, filteredSamples);
+        double avgError = cvAvg(&fs).val[0];
+        printf("Average angle of flow: %f", avgError);
+    } else {
+        printf("No appropriate samples found: %d, %d", numFilteredSamples, angle_count);
+    }
 	cvReleaseImage(&eig_image);
 	cvReleaseImage(&tmp_image);
 	cvReleaseImage(&pyrA);
