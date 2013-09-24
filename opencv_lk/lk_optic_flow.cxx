@@ -89,6 +89,7 @@ int binBySimpleAssignment(double samples[], int nSamples, int bins[], int nBins,
     }
     return 0;
 }
+
 /*
 int binByKmeans(double samples[], int nSamples, int bins[], int nBins) {
 Mat samples(src.rows * src.cols, 3, CV_32F);
@@ -106,9 +107,23 @@ Mat samples(src.rows * src.cols, 3, CV_32F);
 */
 
 // I think this uses the population mean and stddev formulae
-int filterByMeanAndStdDev(double samples[], int nSamples) {
-    meanStdDev
+// Samples in the form of angles
+// C++ MAGIC (nSamples)
+// Filters samples to accept 
+void filterByMeanAndStdDev(double samples[], int nSamples, double filteredSamples[], int& numFilteredSamples, int numStdDevAllowed = 1) {
+	double *mean;
+	double *std_dev;
+    cvAvgSdv(samples, mean, std_dev);
+
+    numFilteredSamples = 0;
+    for (int i = 0; i < nSamples; i++) {
+    	if (abs(samples[i] - mean) < std_dev * numStdDevAllowed) {
+    		filteredSamples[numFilteredSamples] = samples[i];
+    		numFilteredSamples++;
+    	}
+    }
 }
+
 int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
 	CvSize img_sz = imgA.size();
 	int win_size = 15;
@@ -180,11 +195,15 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
         printf("%d: %f\n", i, angles[i]);
     }
     
-    int counts[7] = {0};
-    binBySimpleAssignment(angles, angle_count, counts, 7, 0);
-    for (int i = 0; i < 7; i++) {
-        printf("%d: %d\n", i - 3, counts[i]);
-    }
+    // int counts[7] = {0};
+    // binBySimpleAssignment(angles, angle_count, counts, 7, 0);
+    // for (int i = 0; i < 7; i++) {
+    //     printf("%d: %d\n", i - 3, counts[i]);
+    // }
+
+    double filteredSamples[MAX_CORNERS];
+    int numFilteredSamples;
+    filterByMeanAndStdDev(angles, angle_count, filteredSamples, numFilteredSamples);
 
 	cvReleaseImage(&eig_image);
 	cvReleaseImage(&tmp_image);
