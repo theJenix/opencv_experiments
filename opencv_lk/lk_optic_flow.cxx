@@ -27,8 +27,10 @@ void pullFrame(VideoCapture& cap, Mat& img, Mat& imgGray, void (*adjustFunc)(Mat
 }
 
 // Hardcoded values for green android folder
-Scalar LOW_HSV = Scalar(60, 50, 50);
-Scalar HIGH_HSV = Scalar(90, 255, 255);
+// Scalar LOW_HSV = Scalar(60, 50, 50);
+// Scalar HIGH_HSV = Scalar(90, 255, 255);
+Scalar LOW_HSV = Scalar(25, 160, 160);
+Scalar HIGH_HSV = Scalar(35, 255, 255);
 
 
 // Get binary thresholded image
@@ -37,13 +39,21 @@ Scalar HIGH_HSV = Scalar(90, 255, 255);
 void getBinary(Mat& src, Scalar& low_HSV, Scalar& hi_HSV, Mat& dest) {
     Mat frame = src.clone();
     cvtColor(frame, frame, CV_BGR2HSV);
-    inRange(frame, low_HSV, hi_HSV, dest);
+    Mat bw;
+    inRange(frame, low_HSV, hi_HSV, bw);
+    // vector<vector<Point> > contours;
+    // findContours(bw.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    // 
+    // dest = Mat::zeros(bw.size(), bw.type());
+    // drawContours(dest, contours, -1, Scalar::all(255), CV_FILLED);
+    dest = bw;
 }
             
 int main ( int argc, char **argv )
 {
 	// Load two images and allocate other structures
-	VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/recording2.mov"); // open the default camera
+    VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/bigcarrun1.mov"); // open the default camera
+    // VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/recording1.mov"); // open the default camera
 	if(!cap.isOpened())  // check if we succeeded
         return -1;
 	
@@ -53,12 +63,12 @@ int main ( int argc, char **argv )
 
 	int flipMode = -1;
 	Mat imgA, imgGrayA, imgB, imgGrayB, imgC;
-	pullFrame(cap, imgA, imgGrayA, flipHorizAndVert);
+	pullFrame(cap, imgA, imgGrayA, NULL); //flipHorizAndVert);
 	imgC = imgA;
 	while(true) {
         Mat maskA, discard;
         getBinary(imgA, LOW_HSV, HIGH_HSV, maskA);
-		pullFrame(cap, imgB, imgGrayB, flipHorizAndVert);
+		pullFrame(cap, imgB, imgGrayB, NULL); //flipHorizAndVert);
         trackAndAnnotateMat(imgGrayA, maskA, imgGrayB, imgGrayA);
 
 		cvShowImageMat( "ImageA", imgGrayA );
@@ -67,7 +77,7 @@ int main ( int argc, char **argv )
 		imgA = imgB;
         imgGrayA = imgGrayB;
 		imgC = imgB;
-		usleep(30 * 1000);
+        // usleep(30 * 1000);
 	}
 }
 
@@ -197,9 +207,9 @@ int trackAndAnnotateMat(Mat& imgA, Mat& maskA, Mat& imgB, Mat& imgC) {
             cvLine( &iplC, p0, p1, CV_RGB(255,0,0), 2 );
         }
 	}
-    for (int i = 0; i < angle_count; i++) {
-        printf("%d: %f\n", i, angles[i]);
-    }
+    // for (int i = 0; i < angle_count; i++) {
+    //     printf("%d: %f\n", i, angles[i]);
+    // }
     
     // int counts[7] = {0};
     // binBySimpleAssignment(angles, angle_count, counts, 7, 0);
