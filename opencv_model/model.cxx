@@ -21,7 +21,7 @@ Scalar HIGH_HSV_EDGE = Scalar(40, 255, 255);
 void cannyThreshold(Mat& src, Mat& srcGray, Mat& dst, Mat& dstMask)
 {
     int edgeThresh = 1;
-    int lowThreshold = 120;
+    int lowThreshold = 60; //120;
     int const max_lowThreshold = 200;
     int ratio = 3;
     int kernel_size = 3;
@@ -36,8 +36,10 @@ void cannyThreshold(Mat& src, Mat& srcGray, Mat& dst, Mat& dstMask)
 
   src.copyTo( dst, detected_edges);
   Mat mask;
-  getBinary(dst, LOW_HSV_EDGE, HIGH_HSV_EDGE, dstMask);
+  // getBinary(dst, LOW_HSV_EDGE, HIGH_HSV_EDGE, dstMask);
   // imshow( window_name, dst );
+  cvtColor(dst, dstMask, CV_BGR2GRAY);
+  
  }
 
 void flipHorizAndVert(Mat& img) {
@@ -121,9 +123,9 @@ int main ( int argc, char **argv )
 	if(!cap.isOpened())  // check if we succeeded
         return -1;
 	
-	cvNamedWindow( "ImageA", 0 );
+    // cvNamedWindow( "ImageA", 0 );
 	cvNamedWindow( "ImageB", 0 );
-	cvNamedWindow( "LKpyr_OpticalFlow", 0 );
+    // cvNamedWindow( "LKpyr_OpticalFlow", 0 );
 
 	int flipMode = -1;
 	Mat imgA, imgGrayA, imgB, imgGrayB, imgC;
@@ -137,17 +139,18 @@ int main ( int argc, char **argv )
         //binary threshold for the really bright stuff
         
         cannyThreshold(imgA, imgGrayA, edge, edgeMask);
-        threshold( imgGrayA, thold, 240, 255, 0);
+        // removeSmall(edgeMask, edgeMask, 50);
+        threshold( imgGrayA, thold, 220, 255, 0);
         // printf("%d, %d, %d", thold.size().width, thold.size().height, thold.channels());
         // printf("%d, %d, %d", maskA.size().width, maskA.size().height, maskA.channels());
-        removeSmall(thold, thold, 100);
-        maskA = maskA + edgeMask + thold;
+        maskA = maskA + thold + edgeMask;
+        removeSmall(maskA, maskA, 100);
         
 		pullFrame(cap, imgB, imgGrayB, NULL); //flipHorizAndVert);
 
-		cvShowImageMat( "ImageA", thold );
+        // cvShowImageMat( "ImageA", thold );
         cvShowImageMat( "ImageB", maskA );
-		cvShowImageMat( "LKpyr_OpticalFlow", imgGrayA );
+        // cvShowImageMat( "LKpyr_OpticalFlow", imgGrayA );
 		imgA = imgB;
         imgGrayA = imgGrayB;
 		imgC = imgB;
