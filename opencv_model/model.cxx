@@ -148,12 +148,12 @@ int main ( int argc, char **argv )
         removeSmall(maskA, maskA, 100);
         
         Mat gt;
-        groundTransform(imgA, gt);
+        groundTransform(maskA, gt);
         
 		pullFrame(cap, imgB, imgGrayB, NULL); //flipHorizAndVert);
 
         // cvShowImageMat( "ImageA", thold );
-        cvShowImageMat( "ImageB", imgA );
+        cvShowImageMat( "ImageB", maskA );
         cvShowImageMat( "TransformB", gt);
         
         // cvShowImageMat( "LKpyr_OpticalFlow", imgGrayA );
@@ -211,8 +211,9 @@ int main ( int argc, char **argv )
 // }
 
 void groundTransform(Mat& src, Mat& ground) {
-    int width = 1280;
-    int height = 720;
+	CvSize srcSize = src.size();
+    int width = srcSize.width;
+    int height = srcSize.height;
     
     int x_res = 800;
     int y_res = 800;
@@ -235,20 +236,23 @@ void groundTransform(Mat& src, Mat& ground) {
             double x_ground = x * groundWidth / x_res - (groundWidth / 2);
             double y_ground = y * groundHeight / y_res;
             
+			// angle from the camera down to the point on the ground: acos (-h / r), r = sqrt(x^2 + y^2 + h^)
             double theta = acos(-h/ sqrt(pow(x_ground, 2) + pow(y_ground, 2) + pow(h, 2)));
+			// angle on the ground relative to the origin (under the camera)
             double phi = atan2(y_ground, x_ground);
+			//convert phi and theta to image frame coordinates...this applies
+			// camera calibration adjustments
             int x_frame = (phi + phi_off) * phi_scale + x_frame_off;
             int y_frame = (theta + theta_off) * theta_scale + y_frame_off;
             // if (x == 0 && y == 0) {
             //     printf("%d, %d, %f, %f, %f, %f\n", x_frame, y_frame, theta, phi, theta_scale, phi_scale);
             // }
-            if (y_frame < 0 || y_frame >= height || x_frame < 0 || x_frame >= width) {
-                // printf("%d, %d\n", x, y);
-//                ground.at<double>(y, x) = 0;
-            } else {
+            if (y_frame >=  0 && y_frame < height && x_frame >= 0 && x_frame < width) {
                 // printf("%d, %d, %f\n", x, y,  src.at<Vec3b>(y_frame, x_frame));
                 
-                ground.at<Vec3b>(y_res-y, x_res-x) = src.at<Vec3b>(y_frame, x_frame);
+                // ground.at<Vec3b>(y_res-y, x_res-x) = src.at<Vec3b>(y_frame, x_frame);
+                ground.at<unsigned char>(y_res-y, x_res-x) = src.at<unsigned char>(y_frame, x_frame);
+                
             }
         }
     }
