@@ -11,6 +11,7 @@ void getBinary(Mat& src, Scalar& low_HSV, Scalar& hi_HSV, Mat& dest);
 void cannyThreshold(Mat& src, Mat& srcGray, Mat& dst, Mat& dstMask);
 void removeSmall(Mat& src, Mat& dest, double minRadius);
 void groundTransform(Mat& src, Mat& ground);
+void groundTransformProj(const Mat& src, Mat& ground);
 
 Scalar LOW_HSV_EDGE = Scalar(20, 0, 0);
 Scalar HIGH_HSV_EDGE = Scalar(40, 255, 255);
@@ -124,8 +125,9 @@ int main ( int argc, char **argv )
 	if(!cap.isOpened())  // check if we succeeded
         return -1;
 	
-	cvNamedWindow( "ImageB", 0 );
+    // cvNamedWindow( "ImageB", 0 );
     cvNamedWindow( "TransformB", 0 );
+    cvNamedWindow( "NewTransformB", 0 );
     // cvNamedWindow( "LKpyr_OpticalFlow", 0 );
 
 	int flipMode = -1;
@@ -148,14 +150,14 @@ int main ( int argc, char **argv )
         removeSmall(maskA, maskA, 100);
         
         Mat gt;
-        groundTransform(maskA, gt);
+        groundTransform(imgA, gt);
         Mat gt2;
-        groundTransformProj(maskA, gt2);
+        groundTransformProj(imgA, gt2);
         
 		pullFrame(cap, imgB, imgGrayB, NULL); //flipHorizAndVert);
 
         // cvShowImageMat( "ImageA", thold );
-        cvShowImageMat( "ImageB", maskA );
+        // cvShowImageMat( "ImageB", maskA );
         cvShowImageMat( "TransformB", gt);
         cvShowImageMat( "NewTransformB", gt2);
         
@@ -229,12 +231,12 @@ void groundTransformProj(const Mat& input, Mat& output) {
     //   (-ground_output_x_dim / 2, 0)
     //   to (ground_output_x_dim, ground_output_y_dim)
     //   i.e. (-15 ft, 0 ft) to (15 ft, 30 ft)
-    const double ground_output_y_dim = 30.0; // ft
-    const double ground_output_x_dim = 30.0; // ft
+    const double ground_output_y_dim = 120.0; // ft
+    const double ground_output_x_dim = 120.0; // ft
 
     // general scale factor for the camera frame the input is in
-    const double camera_scale = 1.0; // pixels/focal-length -- ADJUST ME
-    const double camera_pitch = M_PI_2; // radians from vertical -- ADJUST ME
+    const double camera_scale = 1000.0; // pixels/focal-length -- ADJUST ME
+    const double camera_pitch = M_PI_2 + .26; // radians from vertical -- ADJUST ME
 
     output = Mat::zeros(Size(output_x_res, output_y_res), input.type());
     
@@ -246,8 +248,8 @@ void groundTransformProj(const Mat& input, Mat& output) {
         for (int output_y = 0; output_y < output_y_res; output_y++) {
 
             // ground frame coordinates of sample point (in ft, it's all relative)
-            const double x_ground = (output_x / output_x_res) * ground_output_x_dim - (ground_output_x_dim / 2);
-            const double y_ground = (output_y / output_y_res) * ground_output_y_dim;
+            const double x_ground = ((double) output_x / output_x_res) * ground_output_x_dim - (ground_output_x_dim / 2);
+            const double y_ground = ((double) output_y / output_y_res) * ground_output_y_dim;
             const double z_ground = - 21.0 / 12.0;
 
             // camera frame (post-transform) coordinates of ground sample point
@@ -268,9 +270,12 @@ void groundTransformProj(const Mat& input, Mat& output) {
                 // don't sample outside the camera frame
                 continue;
             }
+            
+            output.at<Vec3b>(output_y_res - output_y, output_x) =
+                input.at<Vec3b>(input_y, input_x);
 
-            output.at<unsigned char>(output_y_res - output_y, output_x_res - output_x) =
-                input.at<unsigned char>(input_y, input_x);
+            // output.at<unsigned char>(output_y_res - output_y, output_x_res - output_x) =
+            //     input.at<unsigned char>(input_y, input_x);
         }
     }
 }
@@ -315,8 +320,8 @@ void groundTransform(Mat& src, Mat& ground) {
             if (y_frame >=  0 && y_frame < height && x_frame >= 0 && x_frame < width) {
                 // printf("%d, %d, %f\n", x, y,  src.at<Vec3b>(y_frame, x_frame));
                 
-                // ground.at<Vec3b>(y_res-y, x_res-x) = src.at<Vec3b>(y_frame, x_frame);
-                ground.at<unsigned char>(y_res-y, x_res-x) = src.at<unsigned char>(y_frame, x_frame);
+                ground.at<Vec3b>(y_res-y, x_res-x) = src.at<Vec3b>(y_frame, x_frame);
+                // ground.at<unsigned char>(y_res-y, x_res-x) = src.at<unsigned char>(y_frame, x_frame);
                 
             }
         }
