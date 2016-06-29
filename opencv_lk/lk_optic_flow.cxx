@@ -52,7 +52,7 @@ void getBinary(Mat& src, Scalar& low_HSV, Scalar& hi_HSV, Mat& dest) {
 int main ( int argc, char **argv )
 {
 	// Load two images and allocate other structures
-    VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/bigcarrun1.mov"); // open the default camera
+    VideoCapture cap("/Users/theJenix/Development/opencv_experiments/data/bigcarrun1ed.mov"); // open the default camera
     // VideoCapture cap("/Users/theJenix/Development/opencv_experiments/opencv_lk/recording1.mov"); // open the default camera
 	if(!cap.isOpened())  // check if we succeeded
         return -1;

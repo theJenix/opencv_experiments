@@ -41,6 +41,7 @@ void CannyThreshold(int, void*)
   /// Reduce noise with a kernel 3x3
   blur( src_gray, detected_edges, Size(3,3) );
 
+  printf("%d\n", lowThreshold);
   /// Canny detector
   Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
 

@@ -152,7 +152,7 @@ int main ( int argc, char **argv )
         Mat gt;
         groundTransform(imgA, gt);
         Mat gt2;
-        groundTransformProj(imgA, gt2);
+        groundTransformProj(maskA, gt2);
         
 		pullFrame(cap, imgB, imgGrayB, NULL); //flipHorizAndVert);
 
@@ -271,11 +271,11 @@ void groundTransformProj(const Mat& input, Mat& output) {
                 continue;
             }
             
-            output.at<Vec3b>(output_y_res - output_y, output_x) =
-                input.at<Vec3b>(input_y, input_x);
+    //        output.at<Vec3b>(output_y_res - output_y, output_x) =
+      //          input.at<Vec3b>(input_y, input_x);
 
-            // output.at<unsigned char>(output_y_res - output_y, output_x_res - output_x) =
-            //     input.at<unsigned char>(input_y, input_x);
+             output.at<unsigned char>(output_y_res - output_y, output_x_res - output_x) =
+                 input.at<unsigned char>(input_y, input_x);
         }
     }
 }
